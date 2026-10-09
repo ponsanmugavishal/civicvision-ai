@@ -107,6 +107,10 @@ class Settings(BaseSettings):
                 raise ValueError("STORAGE_BACKEND must be 'supabase' in production")
             if not self.supabase_url:
                 raise ValueError("SUPABASE_URL is required in production")
+            if not self.database_url.startswith("postgresql"):
+                raise ValueError("DATABASE_URL must be the Supabase Postgres connection string in production")
+            if not self.supabase_service_role_key:
+                raise ValueError("SUPABASE_SERVICE_ROLE_KEY is required in production (photo storage)")
             if "*" in self.cors_origin_list:
                 raise ValueError("CORS_ORIGINS must list explicit origins in production")
         if self.dev_login_enabled and len(self.dev_jwt_secret) < 32:
