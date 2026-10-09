@@ -125,7 +125,7 @@ export function MapWorkspace({ reports, loading, error, onRetry, filters, select
 
       {/* Right: map + detail */}
       <div className={cn('relative min-h-[420px] flex-1', mobileView === 'list' ? 'hidden lg:block' : 'block')}>
-        <BaseMap label={mapLabel} fill>
+        <BaseMap label={mapLabel} fill locate>
           <ReportMarkers reports={reports ?? []} selectedId={selectedId} onSelect={onSelect} padRight={selectedId && window.innerWidth >= 640 ? 412 : 0} />
         </BaseMap>
         <div className="pointer-events-none absolute bottom-6 left-3 z-[1000] w-52">

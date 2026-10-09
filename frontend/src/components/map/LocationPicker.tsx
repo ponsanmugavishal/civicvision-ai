@@ -39,6 +39,18 @@ export function LocationPicker({ value, onChange, error }: LocationPickerProps) 
   const [geoState, setGeoState] = useState<'idle' | 'locating' | 'error'>('idle')
   const [geoMessage, setGeoMessage] = useState<string | null>(null)
 
+  // If location permission was already granted, place the pin automatically (no prompt on page load).
+  useEffect(() => {
+    if (value || !navigator.permissions?.query) return
+    navigator.permissions
+      .query({ name: 'geolocation' as PermissionName })
+      .then((st) => {
+        if (st.state === 'granted') locate()
+      })
+      .catch(() => undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const locate = () => {
     if (!('geolocation' in navigator)) {
       setGeoState('error')

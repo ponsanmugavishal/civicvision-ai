@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import { env } from '@/config/env'
 import { cn } from '@/lib/cn'
+import { LocateControl } from './LocateControl'
 
 /** Keeps Leaflet's size in sync with flex/grid layouts that resize without a window resize. */
 function ResizeWatcher() {
@@ -25,13 +26,15 @@ interface BaseMapProps {
   overlay?: ReactNode
   /** Absolutely fill the nearest positioned ancestor instead of sizing via className. */
   fill?: boolean
+  /** Show the "My location" button (and auto-centre when location permission was already granted). */
+  locate?: boolean
 }
 
 /**
  * OpenStreetMap-backed Leaflet map. If tiles fail to load (offline, blocked network) a clear
  * notice is shown while markers and the rest of the interface stay usable.
  */
-export function BaseMap({ center = env.map.center, zoom = env.map.zoom, className, children, label, overlay, fill }: BaseMapProps) {
+export function BaseMap({ center = env.map.center, zoom = env.map.zoom, className, children, label, overlay, fill, locate }: BaseMapProps) {
   const [tileErrors, setTileErrors] = useState(0)
   const [tilesLoaded, setTilesLoaded] = useState(false)
   const [online, setOnline] = useState(() => navigator.onLine)
@@ -62,6 +65,7 @@ export function BaseMap({ center = env.map.center, zoom = env.map.zoom, classNam
           }}
         />
         <ResizeWatcher />
+        {locate && <LocateControl />}
         {children}
       </MapContainer>
       {tilesFailed && (
