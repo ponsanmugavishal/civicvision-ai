@@ -16,6 +16,19 @@ department staff and supervisors.
 | API (Render, free plan — first request after idle can take ~1 min) | https://civicvision-api.onrender.com/health |
 | Database / Auth / Storage | Supabase project `djdwcdunlzhppptrvtsc` (ap-southeast-2) |
 
+## Sign-in
+
+`/login` offers three separate logins; each admits only accounts with the matching server-assigned role:
+
+| Login | Who | Accounts |
+|---|---|---|
+| **Public / Citizen** (`/login/citizen`) | residents reporting issues | self-registration at `/register` — confirmed immediately, no email sent |
+| **Department Authority** (`/login/authority`) | department staff resolving complaints | created by an administrator |
+| **Higher Officials** (`/login/official`) | supervisors and administrators | created by an administrator |
+
+Administrators manage accounts under **Higher Officials → User management** (create Authority/Official accounts with a
+temporary password, change roles, departments and zones). Every change is written to the audit trail.
+
 ## Project status
 
 | Phase | Scope | Status |
