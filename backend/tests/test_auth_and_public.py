@@ -74,3 +74,16 @@ def test_cors_allows_only_configured_origins(client):
 
 def test_dev_login_disabled_by_default(client):
     assert client.post("/api/dev/login", json={"email": "asha@dev.civicvision.local"}).status_code == 404
+
+
+def test_cors_origin_regex(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app.config import get_settings
+    from app.main import create_app
+
+    monkeypatch.setattr(get_settings(), "cors_origin_regex", r"^https://civicvision-[a-z0-9]+-ponsanmugavishal\.vercel\.app$")
+    c = TestClient(create_app())
+    ok = c.options("/api/public/reports", headers={"Origin": "https://civicvision-mwqh1sfir-ponsanmugavishal.vercel.app", "Access-Control-Request-Method": "GET"})
+    bad = c.options("/api/public/reports", headers={"Origin": "https://civicvision-x-attacker.vercel.app", "Access-Control-Request-Method": "GET"})
+    assert ok.headers.get("access-control-allow-origin") == "https://civicvision-mwqh1sfir-ponsanmugavishal.vercel.app"
+    assert "access-control-allow-origin" not in bad.headers

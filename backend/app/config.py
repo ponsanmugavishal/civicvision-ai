@@ -39,6 +39,8 @@ class Settings(BaseSettings):
 
     # --- HTTP / abuse control -------------------------------------------------------------
     cors_origins: str = "http://localhost:5173"
+    # Optional regex for extra allowed origins, e.g. every Vercel deployment URL of this project.
+    cors_origin_regex: str = ""
     report_rate_limit_per_hour: int = 10
     upload_rate_limit_per_hour: int = 60
 
