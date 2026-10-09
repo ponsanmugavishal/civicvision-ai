@@ -8,13 +8,21 @@ department staff and supervisors.
 
 > Independent hackathon prototype. Not affiliated with, endorsed by, or operated for any government body.
 
+## Live deployment
+
+| Part | URL |
+|---|---|
+| Website (Vercel) | https://civicvision-ai-khaki.vercel.app |
+| API (Render, free plan — first request after idle can take ~1 min) | https://civicvision-api.onrender.com/health |
+| Database / Auth / Storage | Supabase project `djdwcdunlzhppptrvtsc` (ap-southeast-2) |
+
 ## Project status
 
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 1 | Frontend, UX, all three portals, demo data, mock service layer | **Complete** |
 | 2 | FastAPI backend, Supabase DB/Auth/Storage/RLS migrations, real workflows | **Complete** (verified locally; not yet run against a real Supabase project) |
-| 3 | Gemini image assistance (free tier), duplicate detection, database-scheduled SLA checks, realtime updates, deployment config | **Code complete** — waiting for Supabase/Gemini credentials and the actual deploy |
+| 3 | Gemini image assistance (free tier), duplicate detection, database-scheduled SLA checks, realtime updates, deployment | **Deployed** |
 
 The frontend runs in two modes:
 - **Demo mode** (`VITE_DATA_MODE=mock`, default) — fictional data in the browser only, no backend.
@@ -109,9 +117,8 @@ supervisor approves the dispute under *Extensions & disputes* and reviews escala
 
 ## Known limitations
 
-- **Not yet verified against a real Supabase project** (no credentials were available). Migrations were verified on
-  real Postgres via PGlite with stub `auth`/`storage` schemas; Supabase Auth sign-up/sign-in and Supabase Storage
-  uploads are implemented but untested end-to-end.
+- Free Render instances sleep after ~15 minutes idle; the first request then takes about a minute. Deadline checks
+  keep running inside Supabase (pg_cron) regardless.
 - Demo mode: no real authentication; permission checks run in the browser; data lives in `localStorage`.
 - AI suggestions need `GEMINI_API_KEY` on the backend; without it the app shows "AI assistance unavailable".
   Suggestions are never applied automatically, and no confidence score is shown (none has been calibrated).
