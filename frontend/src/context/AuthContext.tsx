@@ -5,7 +5,7 @@ import { useLiveUpdates } from '@/lib/live'
 import { supabase } from '@/lib/supabase'
 import { bumpData } from '@/services/dataEvents'
 import { ApiError } from '@/services/errors'
-import { http, setTokenProvider } from '@/services/httpClient'
+import { http, setTokenProvider, setUnauthorizedHandler } from '@/services/httpClient'
 import type { Department, UserProfile, Zone } from '@/types'
 
 /**
@@ -17,6 +17,16 @@ import type { Department, UserProfile, Zone } from '@/types'
 const DEMO_SESSION_KEY = 'civicvision.demo-session'
 const DEV_TOKEN_KEY = 'civicvision.dev-token'
 
+/** Optional request for Department Authority / Higher Official access, reviewed by an administrator. */
+export interface AccessRequestInput {
+  requestedRole: 'staff' | 'supervisor'
+  departmentId: string | null
+  note: string
+}
+
+/** One-time message shown on the login page (e.g. after a session ends). */
+export const LOGIN_NOTICE_KEY = 'civicvision.login-notice'
+
 interface AuthValue {
   mode: 'mock' | 'api'
   ready: boolean
@@ -25,7 +35,7 @@ interface AuthValue {
   user: UserProfile | null
   signInDemo: (userId: string) => void
   signInPassword: (email: string, password: string) => Promise<UserProfile>
-  signUp: (displayName: string, email: string, password: string) => Promise<{ user: UserProfile | null; needsConfirmation: boolean }>
+  signUp: (displayName: string, email: string, password: string, access?: AccessRequestInput) => Promise<{ user: UserProfile | null; needsConfirmation: boolean }>
   signInDev: (email: string) => Promise<UserProfile>
   signOut: () => Promise<void>
 }
@@ -88,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (e instanceof ApiError && e.status === 401) {
               devToken = null
               sessionStorage.removeItem(DEV_TOKEN_KEY)
-              await supabase?.auth.signOut()
+              await supabase?.auth.signOut({ scope: 'local' })
             } else throw e
           }
         }
@@ -98,8 +108,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setReady(true)
       }
     })()
-    const sub = supabase?.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT' && !devToken) setUser(null)
+    // Keep tabs in sync: another tab signing in/out changes the shared Supabase session.
+    const sub = supabase?.auth.onAuthStateChange((event, session) => {
+      if (devToken) return
+      if (event === 'SIGNED_OUT') setUser(null)
+      if (event === 'SIGNED_IN' && session) {
+        setUser((current) => {
+          if (current && current.id !== session.user.id) {
+            void loadProfile()
+              .then(setUser)
+              .catch(() => setUser(null))
+          }
+          return current
+        })
+      }
+    })
+    // A 401 on an authenticated request means the session ended (expired, revoked or signed out elsewhere).
+    setUnauthorizedHandler(() => {
+      try {
+        sessionStorage.setItem(LOGIN_NOTICE_KEY, 'Your session has ended. Please sign in again.')
+      } catch {
+        // ignore
+      }
+      void supabase?.auth.signOut({ scope: 'local' })
+      setUser(null)
     })
     return () => {
       cancelled = true
@@ -129,11 +161,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return p
   }, [])
 
-  const signUp = useCallback(async (displayName: string, email: string, password: string) => {
+  const signUp = useCallback(async (displayName: string, email: string, password: string, access?: AccessRequestInput) => {
     if (!supabase) throw new Error('Supabase Auth is not configured (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).')
     // The backend creates the account already confirmed, so Supabase sends no email (its free plan allows only a
     // couple per hour). The account is always a citizen — roles are assigned by administrators only.
-    await http('/api/auth/register', { method: 'POST', body: JSON.stringify({ displayName, email, password }) })
+    await http('/api/auth/register', { method: 'POST', body: JSON.stringify({ displayName, email, password, ...(access ?? {}) }) })
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw new Error(error.message)
     devToken = null
@@ -170,7 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         // ignore
       }
-      await supabase?.auth.signOut()
+      // Local scope: signing out here never signs the same person out on their other devices.
+      await supabase?.auth.signOut({ scope: 'local' })
       setDirectoryUsers([])
     }
     setUser(null)

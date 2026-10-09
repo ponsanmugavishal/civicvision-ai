@@ -342,6 +342,28 @@ class Notification(Base):
     created_at: Mapped[datetime] = _created()
 
 
+class AccessRequest(Base):
+    """A person's request for Department Authority (staff) or Higher Official (supervisor) access.
+    They stay a citizen until an administrator approves; approval applies the role through the normal admin path."""
+
+    __tablename__ = "access_requests"
+    __table_args__ = (
+        CheckConstraint("requested_role IN ('staff', 'supervisor')", name="access_requests_role_check"),
+        CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="access_requests_status_check"),
+        Index("access_requests_status_idx", "status", "created_at"),
+    )
+    id: Mapped[uuid.UUID] = _id()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("profiles.id", ondelete="CASCADE"))
+    requested_role: Mapped[str] = mapped_column(String(20))
+    department_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("departments.id"), nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("profiles.id"), nullable=True)
+    decision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = _created()
+    decided_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+
+
 class ReportCounter(Base):
     """Per-year counter for human-readable public IDs (CV-YYYY-NNNNN). Incremented under a row lock."""
 

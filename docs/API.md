@@ -54,6 +54,11 @@ Report list endpoints accept filters: `search`, `categories`, `statuses`, `sever
 | POST | `/api/notifications/read` | Signed in | Mark Read |
 | GET | `/api/admin/users` | Administrator | Users |
 | PATCH | `/api/admin/users/{user_id}` | Administrator | Update User |
+| POST | `/api/admin/users` | Administrator | Create Authority / Official account (temporary password) |
+| GET | `/api/admin/access-requests?status=` | Administrator | Access requests |
+| POST | `/api/admin/access-requests/{request_id}/decision` | Administrator | Approve (role, department, zones) or reject (reason required) |
+| POST | `/api/auth/register` | Public (rate-limited) | Citizen sign-up, confirmed without email; optional `requestedRole` creates an access request |
+| GET | `/api/me/access-request` | Signed in | Caller's latest access request |
 | POST | `/api/dev/login` | Dev only (`DEV_LOGIN_ENABLED`) | Issue a token for a seeded @dev.civicvision.local account; 404 otherwise. |
 | GET | `/api/media/{token}` | Signed link | Serves local-storage files (dev); HMAC-signed, expiring. |
 

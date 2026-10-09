@@ -1,19 +1,20 @@
-import { KeyRound, Pencil, Search, UserPlus, Users } from 'lucide-react'
+import { Check, Inbox, KeyRound, Pencil, Search, UserPlus, Users, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Dialog } from '@/components/ui/Dialog'
 import { Alert, EmptyState, ErrorState, LoadingBlock } from '@/components/ui/Feedback'
-import { Checkbox, Field, Input, Select } from '@/components/ui/Field'
+import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/Field'
 import { PageHeader, Tabs } from '@/components/ui/Layout'
 import { useCurrentUser } from '@/context/AuthContext'
 import { useToast } from '@/context/ToastContext'
 import { DEPARTMENTS, ZONES, getDepartment, getZone } from '@/data/directory'
 import { useApi, useMutation } from '@/hooks/useApi'
 import { ROLE_LABEL, type Tone } from '@/lib/domain'
+import { formatDateTime } from '@/lib/format'
 import { api } from '@/services'
-import type { AdminUserInput } from '@/services'
+import type { AccessRequest, AdminUserInput } from '@/services'
 import type { Role, UserProfile } from '@/types'
 
 const ROLE_TONE: Record<Role, Tone> = { citizen: 'slate', staff: 'blue', supervisor: 'violet', administrator: 'red' }
@@ -235,6 +236,108 @@ function EditDialog({ target, onClose }: { target: UserProfile | null; onClose: 
   )
 }
 
+function DecideDialog({ request, decision, onClose }: { request: AccessRequest | null; decision: 'approved' | 'rejected'; onClose: () => void }) {
+  const me = useCurrentUser()
+  const { toast } = useToast()
+  const [scope, setScope] = useState<AdminUserInput | null>(null)
+  const [reason, setReason] = useState('')
+  const decide = useMutation(api.admin.decideAccess)
+  const value: AdminUserInput | null =
+    scope ?? (request ? { role: request.requestedRole, departmentId: request.departmentId, zoneIds: [], allZones: request.requestedRole === 'supervisor', title: '' } : null)
+
+  const close = () => {
+    setScope(null)
+    setReason('')
+    decide.reset()
+    onClose()
+  }
+
+  return (
+    <Dialog
+      open={!!request}
+      onClose={close}
+      title={request ? `${decision === 'approved' ? 'Approve' : 'Reject'} access — ${request.displayName}` : ''}
+      description={request ? `${request.email ?? ''} · requested ${request.requestedRole === 'staff' ? 'Department Authority' : 'Higher Official'} access` : undefined}
+      size="lg"
+      footer={
+        <>
+          <Button variant="secondary" onClick={close}>
+            Cancel
+          </Button>
+          <Button
+            variant={decision === 'approved' ? 'success' : 'danger'}
+            loading={decide.pending}
+            icon={decision === 'approved' ? <Check className="size-4" /> : <X className="size-4" />}
+            onClick={async () => {
+              if (!request || !value) return
+              const r = await decide.run(me, request.id, decision === 'approved' ? { ...value, decision, reason } : { decision, reason })
+              if (r) {
+                toast({ tone: 'success', title: decision === 'approved' ? `${request.displayName} now has access` : 'Request rejected' })
+                close()
+              }
+            }}
+          >
+            {decision === 'approved' ? 'Approve & grant access' : 'Reject request'}
+          </Button>
+        </>
+      }
+    >
+      {request && value && (
+        <div className="space-y-4">
+          {decide.error && <Alert tone="error">{decide.error}</Alert>}
+          {request.note && <blockquote className="rounded-lg border-l-4 border-brand-200 bg-brand-50 px-3 py-2 text-sm text-ink-soft">“{request.note}”</blockquote>}
+          {decision === 'approved' && <ScopeFields value={value} onChange={setScope} errors={decide.fieldErrors} allowCitizen={false} />}
+          <Field label={decision === 'approved' ? 'Note to the person' : 'Reason for rejecting'} required={decision === 'rejected'} error={decide.fieldErrors.reason}>
+            {(p) => <Textarea {...p} rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />}
+          </Field>
+        </div>
+      )}
+    </Dialog>
+  )
+}
+
+function AccessRequests() {
+  const me = useCurrentUser()
+  const { data, error, reload } = useApi(() => api.admin.accessRequests(me, 'pending'), [me.id])
+  const [deciding, setDeciding] = useState<{ request: AccessRequest; decision: 'approved' | 'rejected' } | null>(null)
+  if (error) return <ErrorState message={error} onRetry={reload} />
+  if (!data?.length) return null
+  return (
+    <Card className="mb-6 border-orange-200">
+      <div className="flex items-center gap-2 border-b border-line px-4 py-3">
+        <Inbox className="size-4 text-orange-600" aria-hidden />
+        <h2 className="text-sm font-semibold">Access requests waiting for you ({data.length})</h2>
+      </div>
+      <ul className="divide-y divide-line">
+        {data.map((r) => (
+          <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                {r.displayName}
+                <Badge tone={r.requestedRole === 'staff' ? 'blue' : 'violet'}>{r.requestedRole === 'staff' ? 'Department Authority' : 'Higher Official'}</Badge>
+              </p>
+              <p className="truncate text-xs text-ink-muted">
+                {r.email}
+                {r.departmentId ? ` · ${getDepartment(r.departmentId)?.shortName ?? ''}` : ''} · {formatDateTime(r.createdAt)}
+              </p>
+              {r.note && <p className="mt-0.5 line-clamp-2 text-xs text-ink-soft">“{r.note}”</p>}
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="success" icon={<Check className="size-3.5" />} onClick={() => setDeciding({ request: r, decision: 'approved' })}>
+                Approve
+              </Button>
+              <Button size="sm" variant="secondary" icon={<X className="size-3.5" />} onClick={() => setDeciding({ request: r, decision: 'rejected' })}>
+                Reject
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <DecideDialog request={deciding?.request ?? null} decision={deciding?.decision ?? 'approved'} onClose={() => setDeciding(null)} />
+    </Card>
+  )
+}
+
 export default function UserManagement() {
   const me = useCurrentUser()
   const { data, error, initialLoading, reload } = useApi(() => api.admin.users(me), [me.id])
@@ -260,6 +363,7 @@ export default function UserManagement() {
           </Button>
         }
       />
+      <AccessRequests />
       <Card>
         <Tabs
           label="User groups"

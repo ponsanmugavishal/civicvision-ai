@@ -159,6 +159,9 @@ export const httpApi: CivicApi = {
     users: () => http('/api/admin/users'),
     createUser: (_user, input) => write('/api/admin/users', json(input)),
     updateUser: (_user, id, input) => write(`/api/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+    accessRequests: (_user, status) => http(`/api/admin/access-requests${status ? `?status=${status}` : ''}`),
+    decideAccess: (_user, id, input) => write(`/api/admin/access-requests/${id}/decision`, json(input)),
+    myAccessRequest: () => http('/api/me/access-request'),
   },
 
   auth: {

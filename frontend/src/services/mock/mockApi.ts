@@ -777,6 +777,15 @@ export const mockApi: CivicApi = {
     async updateUser() {
       throw invalid('Changing roles is not available in demo mode.')
     },
+    async accessRequests() {
+      return []
+    },
+    async decideAccess() {
+      throw invalid('Access requests are not available in demo mode.')
+    },
+    async myAccessRequest() {
+      return null
+    },
   },
 
   auth: {

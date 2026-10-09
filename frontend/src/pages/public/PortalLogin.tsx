@@ -7,10 +7,10 @@ import { Card, CardBody } from '@/components/ui/Card'
 import { Alert } from '@/components/ui/Feedback'
 import { Field, Input } from '@/components/ui/Field'
 import { env, isMockMode, supabaseConfigured } from '@/config/env'
-import { useAuth } from '@/context/AuthContext'
+import { LOGIN_NOTICE_KEY, useAuth } from '@/context/AuthContext'
 import { DEMO_PERSONAS, getUser, USERS } from '@/data/directory'
 import { ROLE_LABEL } from '@/lib/domain'
-import { errorMessage } from '@/services'
+import { api, errorMessage } from '@/services'
 import type { Role, UserProfile } from '@/types'
 import { PORTALS, portalForRole, type Portal, type PortalId } from './portals'
 
@@ -66,6 +66,15 @@ export default function PortalLogin() {
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({})
   const [pending, setPending] = useState(false)
+  const [notice] = useState(() => {
+    try {
+      const n = sessionStorage.getItem(LOGIN_NOTICE_KEY)
+      sessionStorage.removeItem(LOGIN_NOTICE_KEY)
+      return n
+    } catch {
+      return null
+    }
+  })
 
   if (!portal) return <Navigate to="/login" replace />
   // Already signed in with a matching account → straight to the portal.
@@ -73,8 +82,14 @@ export default function PortalLogin() {
 
   const admit = async (u: UserProfile) => {
     if (!portal.roles.includes(u.role)) {
+      let message = wrongPortal(u, portal)
+      if (u.role === 'citizen' && portal.id !== 'citizen') {
+        const req = await api.admin.myAccessRequest(u).catch(() => null)
+        if (req?.status === 'pending') message = `Your ${portal.label} access request is waiting for an administrator's approval. Until then, please use the Public / Citizen login.`
+        if (req?.status === 'rejected') message = `Your access request was not approved${req.decisionReason ? `: ${req.decisionReason}` : ''}. Please use the Public / Citizen login.`
+      }
       await signOut()
-      setErrors({ form: wrongPortal(u, portal) })
+      setErrors({ form: message })
       return
     }
     navigate(safeNext(next, portal), { replace: true })
@@ -134,7 +149,7 @@ export default function PortalLogin() {
         </div>
       </div>
 
-      {next && <Alert className="mt-5">Please sign in to continue.</Alert>}
+      {notice ? <Alert tone="warning" className="mt-5">{notice}</Alert> : next && <Alert className="mt-5">Please sign in to continue.</Alert>}
 
       {showForm ? (
         <Card className="mt-6">
@@ -169,7 +184,10 @@ export default function PortalLogin() {
         </p>
       ) : (
         <p className="mt-4 text-sm text-ink-muted">
-          {portal.label} accounts are created by an administrator. If you need access, contact your department's administrator.
+          {portal.label} accounts are approved by an administrator.{' '}
+          <Link to={`/register?type=${portal.id}`} className="font-medium text-brand-700 hover:underline">
+            Request {portal.label} access
+          </Link>
         </p>
       )}
 

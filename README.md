@@ -23,11 +23,13 @@ department staff and supervisors.
 | Login | Who | Accounts |
 |---|---|---|
 | **Public / Citizen** (`/login/citizen`) | residents reporting issues | self-registration at `/register` — confirmed immediately, no email sent |
-| **Department Authority** (`/login/authority`) | department staff resolving complaints | created by an administrator |
-| **Higher Officials** (`/login/official`) | supervisors and administrators | created by an administrator |
+| **Department Authority** (`/login/authority`) | department staff resolving complaints | request at `/register?type=authority` (approved by an administrator), or created by an administrator |
+| **Higher Officials** (`/login/official`) | supervisors and administrators | request at `/register?type=official` (approved by an administrator), or created by an administrator |
 
 Administrators manage accounts under **Higher Officials → User management** (create Authority/Official accounts with a
-temporary password, change roles, departments and zones). Every change is written to the audit trail.
+temporary password, change roles, departments and zones) and approve or reject **access requests**. Someone who asks for
+Authority/Official access at sign-up gets a citizen account straight away; the official login opens only after an administrator
+approves the request. Nobody can grant themselves a role. Every change is written to the audit trail.
 
 ## Project status
 

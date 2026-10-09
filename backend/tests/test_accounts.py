@@ -78,3 +78,37 @@ def test_account_creation_needs_server_key(client, monkeypatch):
     monkeypatch.setattr(get_settings(), "supabase_service_role_key", "")
     r = client.post("/api/auth/register", json={"displayName": "A B", "email": "a@b.org", "password": "Str0ngPass"})
     assert r.status_code == 503
+
+
+def test_access_request_flow(api, client, fake_supabase):
+    # Sign-up asking for Department Authority access → still a citizen, with a pending request.
+    assert client.post("/api/auth/register", json={"displayName": "Crew", "email": "crew2@x.org", "password": "Str0ngPass", "requestedRole": "staff"}).status_code == 422  # department required
+    r = client.post("/api/auth/register", json={"displayName": "Crew Member", "email": "crew2@x.org", "password": "Str0ngPass", "requestedRole": "staff", "departmentId": str(DEPT_DRAINS), "note": "Employee ID 1234"})
+    assert r.status_code == 201 and r.json()["accessRequestId"]
+    uid = uuid.UUID(r.json()["id"])
+    h = {"Authorization": f"Bearer {token_for(uid)}"}
+    assert client.get("/api/me", headers=h).json()["profile"]["role"] == "citizen"
+    mine = client.get("/api/me/access-request", headers=h).json()
+    assert mine["status"] == "pending" and mine["requestedRole"] == "staff"
+    assert client.get("/api/reports", headers=h).status_code == 403  # no staff powers before approval
+
+    # Only administrators see and decide requests.
+    assert api.get("/api/admin/access-requests", "supervisor").status_code == 403
+    pending = api.get("/api/admin/access-requests?status=pending", "admin").json()
+    assert [p["email"] for p in pending] == ["crew2@x.org"]
+    rid = pending[0]["id"]
+    assert api.post(f"/api/admin/access-requests/{rid}/decision", "admin", json={"decision": "approved", "role": "staff"}).status_code == 422  # needs department + zones
+    ok = api.post(f"/api/admin/access-requests/{rid}/decision", "admin", json={"decision": "approved", "role": "staff", "departmentId": str(DEPT_DRAINS), "zoneIds": [str(ZONE_NORTH)]})
+    assert ok.status_code == 200 and ok.json()["status"] == "approved"
+    assert client.get("/api/me", headers=h).json()["profile"]["role"] == "staff"
+    assert api.post(f"/api/admin/access-requests/{rid}/decision", "admin", json={"decision": "rejected", "reason": "Too late"}).status_code == 422  # already decided
+
+
+def test_access_request_rejection_needs_reason(api, client, fake_supabase):
+    r = client.post("/api/auth/register", json={"displayName": "Boss", "email": "boss@x.org", "password": "Str0ngPass", "requestedRole": "supervisor"})
+    rid = api.get("/api/admin/access-requests", "admin").json()[0]["id"]
+    assert api.post(f"/api/admin/access-requests/{rid}/decision", "admin", json={"decision": "rejected", "reason": ""}).status_code == 422
+    done = api.post(f"/api/admin/access-requests/{rid}/decision", "admin", json={"decision": "rejected", "reason": "Not a city employee"})
+    assert done.status_code == 200 and done.json()["status"] == "rejected"
+    h = {"Authorization": f"Bearer {token_for(uuid.UUID(r.json()['id']))}"}
+    assert client.get("/api/me", headers=h).json()["profile"]["role"] == "citizen"

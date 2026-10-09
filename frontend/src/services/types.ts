@@ -167,7 +167,25 @@ export interface CivicApi {
     users(user: UserProfile): Promise<UserProfile[]>
     createUser(user: UserProfile, input: AdminUserInput & { displayName: string; email: string; password: string }): Promise<UserProfile>
     updateUser(user: UserProfile, id: string, input: AdminUserInput): Promise<UserProfile>
+    accessRequests(user: UserProfile, status?: AccessRequest['status']): Promise<AccessRequest[]>
+    decideAccess(user: UserProfile, id: string, input: Partial<AdminUserInput> & { decision: 'approved' | 'rejected'; reason: string }): Promise<AccessRequest>
+    /** The signed-in user's latest access request (null if none). */
+    myAccessRequest(user: UserProfile): Promise<AccessRequest | null>
   }
+}
+
+export interface AccessRequest {
+  id: string
+  userId: string
+  displayName: string
+  email: string | null
+  requestedRole: 'staff' | 'supervisor'
+  departmentId: string | null
+  note: string
+  status: 'pending' | 'approved' | 'rejected'
+  decisionReason: string | null
+  createdAt: string
+  decidedAt: string | null
 }
 
 export interface AdminUserInput {
