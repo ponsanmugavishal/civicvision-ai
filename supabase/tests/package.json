@@ -1,0 +1,14 @@
+{
+  "name": "civicvision-supabase-tests",
+  "private": true,
+  "type": "module",
+  "description": "Verifies the SQL migrations on PGlite and provides a local Postgres for backend integration tests.",
+  "scripts": {
+    "verify": "node verify_migrations.mjs ../..",
+    "pg": "node pg_dev_server.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite-socket": "0.2.11"
+  }
+}

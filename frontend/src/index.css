@@ -1,0 +1,101 @@
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+@import 'leaflet.markercluster/dist/MarkerCluster.css';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Brand / interaction */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  /* Neutral surfaces */
+  --color-canvas: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-line: #e4e7ec;
+  --color-ink: #101828;
+  --color-ink-soft: #475467;
+  --color-ink-muted: #667085;
+
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.05), 0 1px 3px rgb(16 24 40 / 0.04);
+  --shadow-pop: 0 12px 24px -6px rgb(16 24 40 / 0.14), 0 4px 8px -4px rgb(16 24 40 / 0.06);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+}
+
+/* Leaflet tweaks */
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: #eef1f4;
+}
+.leaflet-div-icon.cv-marker,
+.leaflet-div-icon.cv-pin {
+  background: transparent;
+  border: none;
+}
+.cv-marker:focus-visible {
+  outline: none;
+}
+.cv-marker:focus-visible .cv-marker-body {
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px #2563eb;
+}
+.cv-marker-selected .cv-marker-body {
+  transform: scale(1.22);
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px #1d4ed8, 0 6px 14px rgb(0 0 0 / 0.3);
+}
+.cv-marker-body {
+  transition: transform 120ms ease;
+}
+.marker-cluster-custom {
+  background: transparent;
+}
+.marker-cluster-custom > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgb(29 78 216 / 0.9);
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  box-shadow: 0 0 0 4px rgb(29 78 216 / 0.22), 0 2px 6px rgb(0 0 0 / 0.25);
+}
+.marker-cluster-custom.has-overdue > div {
+  box-shadow: 0 0 0 4px rgb(220 38 38 / 0.35), 0 2px 6px rgb(0 0 0 / 0.25);
+}
+
+@keyframes cv-pulse {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.cv-pulse {
+  animation: cv-pulse 1.8s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cv-pulse { animation: none; }
+  .cv-marker-body { transition: none; }
+}
+
+dialog::backdrop {
+  background: rgb(16 24 40 / 0.45);
+}

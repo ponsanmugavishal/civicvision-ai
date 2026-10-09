@@ -1,0 +1,45 @@
+# Render Blueprint — CIVICVISION AI backend (FastAPI).
+# Secrets use `sync: false`: Render asks for them when you create the Blueprint and never stores them in git.
+services:
+  - type: web
+    name: civicvision-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.7
+      - key: ENV
+        value: production
+      - key: STORAGE_BACKEND
+        value: supabase
+      - key: AUTO_CREATE_SCHEMA
+        value: "false"
+      - key: DEV_LOGIN_ENABLED
+        value: "false"
+      - key: STORAGE_BUCKET
+        value: report-media
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite
+      # Deadline checks run in the database every 5 minutes (pg_cron). This in-process check is a backup and is
+      # idempotent, so both can run safely.
+      - key: SLA_CHECK_INTERVAL_SECONDS
+        value: "300"
+      - key: DATABASE_URL          # Supabase session-pooler connection string, postgresql+psycopg://...
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET   # only for projects on the legacy HS256 secret; leave blank otherwise
+        sync: false
+      - key: GEMINI_API_KEY        # optional — free key from Google AI Studio; blank = "AI assistance unavailable"
+        sync: false
+      - key: CORS_ORIGINS          # your Vercel URL(s), comma-separated, e.g. https://civicvision.vercel.app
+        sync: false
+      - key: CRON_SECRET
+        generateValue: true
