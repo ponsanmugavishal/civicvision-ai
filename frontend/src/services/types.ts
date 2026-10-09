@@ -163,4 +163,17 @@ export interface CivicApi {
   auth: {
     registerDemoCitizen(input: { displayName: string; email: string }): Promise<UserProfile>
   }
+  admin: {
+    users(user: UserProfile): Promise<UserProfile[]>
+    createUser(user: UserProfile, input: AdminUserInput & { displayName: string; email: string; password: string }): Promise<UserProfile>
+    updateUser(user: UserProfile, id: string, input: AdminUserInput): Promise<UserProfile>
+  }
+}
+
+export interface AdminUserInput {
+  role: UserProfile['role']
+  departmentId: string | null
+  zoneIds: string[]
+  allZones: boolean
+  title?: string | null
 }

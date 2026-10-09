@@ -29,7 +29,7 @@ export default function Register() {
     const errs: Record<string, string> = {}
     if (form.displayName.trim().length < 2) errs.displayName = 'Enter your name (at least 2 characters).'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errs.email = 'Enter a valid email address.'
-    if (form.password.length < 8) errs.password = 'Use at least 8 characters.'
+    if (form.password.length < 8 || form.password.toLowerCase() === form.password || !/\d/.test(form.password)) errs.password = 'Use at least 8 characters, including a capital letter and a number.'
     if (form.confirm !== form.password) errs.confirm = 'Passwords do not match.'
     if (!form.agree) errs.agree = isMockMode ? 'Please confirm you understand this is a demo account.' : 'Please accept to continue.'
     setErrors(errs)
@@ -81,7 +81,7 @@ export default function Register() {
       <h1 className="text-2xl font-semibold tracking-tight">Create a citizen account</h1>
       <p className="mt-1 text-sm text-ink-muted">
         Already registered?{' '}
-        <Link to="/login" className="font-medium text-brand-700 hover:underline">
+        <Link to="/login/citizen" className="font-medium text-brand-700 hover:underline">
           Sign in
         </Link>
       </p>

@@ -155,6 +155,12 @@ export const httpApi: CivicApi = {
     },
   },
 
+  admin: {
+    users: () => http('/api/admin/users'),
+    createUser: (_user, input) => write('/api/admin/users', json(input)),
+    updateUser: (_user, id, input) => write(`/api/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  },
+
   auth: {
     async registerDemoCitizen() {
       throw new ApiError(400, 'Use Supabase sign-up in API mode.')

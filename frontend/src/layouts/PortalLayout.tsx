@@ -12,6 +12,7 @@ import {
   Menu,
   PlusCircle,
   ScrollText,
+  UserCog,
   ShieldAlert,
   X,
   type LucideIcon,
@@ -61,6 +62,7 @@ const NAV: Record<'citizen' | 'staff' | 'supervisor', NavItem[]> = {
 }
 
 function navFor(role: Role) {
+  if (role === 'administrator') return [...NAV.supervisor, { to: '/supervisor/users', label: 'User management', icon: UserCog }]
   return role === 'citizen' ? NAV.citizen : role === 'staff' ? NAV.staff : NAV.supervisor
 }
 

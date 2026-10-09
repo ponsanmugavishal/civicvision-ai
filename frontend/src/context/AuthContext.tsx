@@ -131,10 +131,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (displayName: string, email: string, password: string) => {
     if (!supabase) throw new Error('Supabase Auth is not configured (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).')
-    // display_name is only used as the profile name; the database trigger always creates a citizen.
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { display_name: displayName }, emailRedirectTo: `${window.location.origin}/login` } })
+    // The backend creates the account already confirmed, so Supabase sends no email (its free plan allows only a
+    // couple per hour). The account is always a citizen — roles are assigned by administrators only.
+    await http('/api/auth/register', { method: 'POST', body: JSON.stringify({ displayName, email, password }) })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw new Error(error.message)
-    if (!data.session) return { user: null, needsConfirmation: true }
+    devToken = null
     const p = await loadProfile()
     setUser(p)
     return { user: p, needsConfirmation: false }

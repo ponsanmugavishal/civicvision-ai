@@ -210,14 +210,17 @@ export default function Landing() {
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Three role-specific portals</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {[
-              { icon: Users, title: 'Citizens', body: 'Submit and track complaints, view resolution evidence, give feedback, request reopening.' },
-              { icon: Building2, title: 'Department staff', body: 'Work queue scoped to their department and zone, status workflow, progress notes, evidence uploads, deadline countdowns.' },
-              { icon: Landmark, title: 'Supervisors', body: 'Overdue, due-soon and critical queues, escalation review, reassignment, extension decisions, performance and hotspot analysis, audit trail.' },
+              { icon: Users, title: 'Public / Citizens', body: 'Submit and track complaints, view resolution evidence, give feedback, request reopening.', to: '/login/citizen', cta: 'Citizen login' },
+              { icon: Building2, title: 'Department Authority', body: 'Work queue scoped to their department and zone, status workflow, progress notes, evidence uploads, deadline countdowns.', to: '/login/authority', cta: 'Authority login' },
+              { icon: Landmark, title: 'Higher Officials', body: 'Overdue, due-soon and critical queues, escalation review, reassignment, extension decisions, performance and hotspot analysis, audit trail, account management.', to: '/login/official', cta: 'Officials login' },
             ].map((p) => (
-              <div key={p.title} className="rounded-xl border border-line p-5">
+              <div key={p.title} className="flex flex-col rounded-xl border border-line p-5">
                 <p.icon className="size-6 text-brand-700" aria-hidden />
                 <h3 className="mt-3 font-semibold">{p.title}</h3>
-                <p className="mt-1 text-sm text-ink-soft">{p.body}</p>
+                <p className="mt-1 flex-1 text-sm text-ink-soft">{p.body}</p>
+                <ButtonLink to={p.to} variant="secondary" size="sm" className="mt-4 self-start">
+                  {p.cta} <ArrowRight className="size-4" aria-hidden />
+                </ButtonLink>
               </div>
             ))}
           </div>

@@ -48,6 +48,7 @@ const router = createBrowserRouter([
           { path: 'reports/:id', element: page(() => import('@/pages/public/PublicReportDetail')) },
           { path: 'track', element: page(() => import('@/pages/public/TrackComplaint')) },
           { path: 'login', element: page(() => import('@/pages/public/Login')) },
+          { path: 'login/:portal', element: page(() => import('@/pages/public/PortalLogin')) },
           { path: 'register', element: page(() => import('@/pages/public/Register')) },
           { path: '*', element: page(() => import('@/pages/public/NotFound')) },
         ],
@@ -95,6 +96,10 @@ const router = createBrowserRouter([
           { path: 'performance', element: page(() => import('@/pages/supervisor/Performance')) },
           { path: 'complaints', element: page(() => import('@/pages/supervisor/AllComplaints')) },
           { path: 'audit', element: page(() => import('@/pages/supervisor/AuditTrail')) },
+          {
+            path: 'users',
+            element: <RequireRole roles={['administrator']}>{page(() => import('@/pages/supervisor/UserManagement'))}</RequireRole>,
+          },
           { path: 'reports/:id', element: page(() => import('@/pages/staff/WorkReportDetail')) },
         ],
       },

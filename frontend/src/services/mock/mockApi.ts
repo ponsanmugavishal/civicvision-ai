@@ -767,6 +767,18 @@ export const mockApi: CivicApi = {
     },
   },
 
+  admin: {
+    async users() {
+      return USERS
+    },
+    async createUser() {
+      throw invalid('Creating accounts is not available in demo mode.')
+    },
+    async updateUser() {
+      throw invalid('Changing roles is not available in demo mode.')
+    },
+  },
+
   auth: {
     async registerDemoCitizen(input) {
       await latency()

@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import get_settings
 from .db import Base, get_engine, session_factory
 from .errors import install_handlers
-from .routers import admin, ai, analytics, directory, notifications, public, reports, supervisor, system
+from .routers import accounts, admin, ai, analytics, directory, notifications, public, reports, supervisor, system
 from .services import realtime, sla
 
 log = logging.getLogger("civicvision")
@@ -68,12 +68,12 @@ def create_app() -> FastAPI:
     async def broadcast_writes(request: Request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if request.method in ("POST", "PATCH") and response.status_code < 400 and path.startswith("/api/") and not path.startswith(("/api/ai/", "/api/dev/", "/api/notifications")):
+        if request.method in ("POST", "PATCH") and response.status_code < 400 and path.startswith("/api/") and not path.startswith(("/api/ai/", "/api/dev/", "/api/notifications", "/api/auth/")):
             parts = path.split("/")
             realtime.publish(parts[2] if len(parts) > 2 else "api", parts[3] if len(parts) > 3 else None)
         return response
 
-    for r in (system.router, directory.router, public.router, ai.router, reports.router, supervisor.router, analytics.router, notifications.router, admin.router):
+    for r in (system.router, accounts.router, directory.router, public.router, ai.router, reports.router, supervisor.router, analytics.router, notifications.router, admin.router):
         app.include_router(r)
     return app
 
